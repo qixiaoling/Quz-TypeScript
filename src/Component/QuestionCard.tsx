@@ -21,7 +21,7 @@ const QuestionCard: React.FC<Props> = ({
             <p>{question}</p>
             {answers.map((answer) =>{
                 return(
-                    <button onClick={callBack}>
+                    <button onClick={callBack} value={answer}>
                         {answer}
                     </button>
                 )

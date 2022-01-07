@@ -54,7 +54,7 @@ const App: React.FC = () => {
     const [questions, setQuestions] = useState<QuestionsState[]>([]);
     const [loading, setLoading] = useState(false);
     const [gameOver, setGameOver] = useState(true);
-    const [score, setScore] = useState(0);
+    const [score, setScore] = useState<number>(0);
     const [number, setNumber] = useState(0);
     const [userAnswers, setUserAnswers] = useState<AnswerObject[]>([]);
     const startTrivia = async () => {
@@ -78,11 +78,12 @@ const App: React.FC = () => {
     }
     const checkAnswer = (e:any) => {
         if(!gameOver) {
-            const answerFromUser = e.target.value;
+            const answerFromUser = e.currentTarget.value;
             const correct = questions[number].correct_answer === answerFromUser;
-            if(correct) {
-               setScore((prevState)=> prevState + 1);
-            }
+            console.log("correct is : " + questions[number].correct_answer);
+            console.log("user answer is : " + answerFromUser);
+            if (correct) setScore((prev) => prev + 1);
+            console.log(score)
             const userAnswerObject = {
                 question: questions[number].question,
                 correct_answer : questions[number].correct_answer,
@@ -99,8 +100,9 @@ const App: React.FC = () => {
         <>
             <div>
                 <h1>REACT QUIZ</h1>
-                {gameOver ? (<button onClick={startTrivia}>start</button>) : null}
-                {!gameOver ? (<p>Score : {score}</p>) : null}
+                {console.log(questions)}
+                {gameOver || userAnswers.length === TOTAL_QUESTIONS ? (<button onClick={startTrivia}>start</button>) : null}
+                {!gameOver ? <p>Score : {score}</p> : null}
                 {!loading && !gameOver && (
                     <QuestionCard
                         question={questions[number].question}

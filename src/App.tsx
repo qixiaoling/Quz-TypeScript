@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {shuffleArray} from "./Utility/Util";
 import QuestionCard from "./Component/QuestionCard";
+import {GlobalStyle, Wrapper} from "./APP.styles";
 
 export type AnswerObject = {
     question : string;
@@ -98,11 +99,15 @@ const App: React.FC = () => {
 
     return (
         <>
-            <div>
+            <GlobalStyle/>
+            <Wrapper>
                 <h1>REACT QUIZ</h1>
-                {console.log(questions)}
-                {gameOver || userAnswers.length === TOTAL_QUESTIONS ? (<button onClick={startTrivia}>start</button>) : null}
-                {!gameOver ? <p>Score : {score}</p> : null}
+                {gameOver || userAnswers.length === TOTAL_QUESTIONS ? (
+                    <button onClick={startTrivia} className="btn start-btn">start</button>
+                ) : null}
+                {!gameOver ?
+                    <p>Score : {score}</p>
+                    : null}
                 {!loading && !gameOver && (
                     <QuestionCard
                         question={questions[number].question}
@@ -115,9 +120,9 @@ const App: React.FC = () => {
                 )}
                 {!loading && !gameOver && userAnswers.length === number + 1 && number !== TOTAL_QUESTIONS - 1 ?
                     (
-                        <button onClick={nextQuestion}>Next Question</button>
+                        <button onClick={nextQuestion} className="btn next-btn">Next Question</button>
                     ) : null}
-            </div>
+            </Wrapper>
         </>
     );
 };

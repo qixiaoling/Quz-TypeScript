@@ -1,11 +1,12 @@
 import React from 'react';
+import {AnswerObject} from "../App";
 type Props ={
     question: string;
     answers : string[];
     questionNr : number;
     callBack : (e: any) => void;
     total_questions : number;
-    userAnswers : any;
+    userAnswer : AnswerObject | undefined;
 }
 const QuestionCard: React.FC<Props> = ({
                                            question,
@@ -13,7 +14,7 @@ const QuestionCard: React.FC<Props> = ({
                                            questionNr,
                                            callBack,
                                            total_questions,
-                                           userAnswers}) =>{
+                                           userAnswer}) =>{
     return(
         <div>
             <h3>Question : {questionNr} / {total_questions}</h3>

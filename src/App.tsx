@@ -2,6 +2,13 @@ import React, {useState} from 'react';
 import {shuffleArray} from "./Utility/Util";
 import QuestionCard from "./Component/QuestionCard";
 
+export type AnswerObject = {
+    question : string;
+    answerFromUser: string;
+    correct: boolean;
+    correct_answer: string;
+
+}
 const TOTAL_QUESTIONS = 10;
 type Question = {
     category: string;
@@ -49,7 +56,7 @@ const App: React.FC = () => {
     const [gameOver, setGameOver] = useState(true);
     const [score, setScore] = useState(0);
     const [number, setNumber] = useState(0);
-    const [userAnswers, setUserAnswers] = useState([]);
+    const [userAnswers, setUserAnswers] = useState<AnswerObject[]>([]);
     const startTrivia = async () => {
         setLoading(true);
         setGameOver(false)
@@ -70,13 +77,20 @@ const App: React.FC = () => {
 
     }
     const checkAnswer = (e:any) => {
-        const answerFromUser = e.target.value;
-        const correct = questions[number].correct_answer === answerFromUser;
-        if(correct) {
-
+        if(!gameOver) {
+            const answerFromUser = e.target.value;
+            const correct = questions[number].correct_answer === answerFromUser;
+            if(correct) {
+               setScore((prevState)=> prevState + 1);
+            }
+            const userAnswerObject = {
+                question: questions[number].question,
+                correct_answer : questions[number].correct_answer,
+                answerFromUser: answerFromUser,
+                correct: correct,
+            }
+            setUserAnswers((prev)=>[...prev, userAnswerObject])
         }
-
-
 
     }
 
@@ -94,10 +108,10 @@ const App: React.FC = () => {
                         questionNr={number + 1}
                         callBack={checkAnswer}
                         total_questions={TOTAL_QUESTIONS}
-                        userAnswers={userAnswers}
+                        userAnswer={userAnswers ? userAnswers[number] : undefined}
                     />
                 )}
-                {!loading && !gameOver && userAnswers.length === number + 1 && userAnswers.length !== TOTAL_QUESTIONS - 1 ?
+                {!loading && !gameOver && userAnswers.length === number + 1 && number !== TOTAL_QUESTIONS - 1 ?
                     (
                         <button onClick={nextQuestion}>Next Question</button>
                     ) : null}

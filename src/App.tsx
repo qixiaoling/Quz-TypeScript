@@ -1,65 +1,102 @@
-import React, {useState} from 'react';
-import {shuffleArray} from "./Utility/Util";
-const TOTAL_QUESTIONS = 10;
-export type Question = {
-    category: string;
-    correct_answer:string;
-    difficulty: string;
-    incorrect_answers : string[];
+import React, { useState } from 'react';
+import { fetchQuizQuestions } from './API';
+// Components
+import QuestionCard from "./Component/QuestionCard";
+// types
+import { QuestionsState, Difficulty } from './API';
+// Styles
+
+export type AnswerObject = {
     question: string;
-    type:string;
-}
-export type QuestionState = Question & {answers : string[]};
-export enum Difficulty {
-    EASY = "easy",
-    MEDIUM = "medium",
-    HARD = "hard",
-}
+    answer: string;
+    correct: boolean;
+    correctAnswer: string;
+};
+
+const TOTAL_QUESTIONS = 10;
+
 const App: React.FC = () => {
-  const [questions, setQuestions] = useState<QuestionState[]>([]);
-  const startTrivia = async () =>{
-      const data = await fetchData();
-      setQuestions(data);
-  }
+    const [loading, setLoading] = useState(false);
+    const [questions, setQuestions] = useState<QuestionsState[]>([]);
+    const [number, setNumber] = useState(0);
+    const [userAnswers, setUserAnswers] = useState<AnswerObject[]>([]);
+    const [score, setScore] = useState(0);
+    const [gameOver, setGameOver] = useState(true);
 
-  const fetchData = async ():Promise<QuestionState[]>  => {
+    const startTrivia = async () => {
+        setLoading(true);
+        setGameOver(false);
+        const newQuestions = await fetchQuizQuestions(
+            TOTAL_QUESTIONS,
+            Difficulty.EASY
+        );
+        setQuestions(newQuestions);
+        setScore(0);
+        setUserAnswers([]);
+        setNumber(0);
+        setLoading(false);
+    };
 
-      const endpoint = `https://opentdb.com/api.php?amount=${TOTAL_QUESTIONS}&difficulty=${Difficulty.EASY}&type=multiple`
-      const fetchedData = fetch(endpoint)
-          .then((res) => res.json())
-          .then((res) => {
-              return res.results.map((resItem: Question) => ({
-                      ...resItem,
-                      answers: shuffleArray([...resItem.incorrect_answers, resItem.correct_answer])
-                  })// console.log(questions);//You cannot see the updated state!!!you can see it if you call the async funciton
-                  // again, but what it will show is the old data.
-              )
+    const checkAnswer = (e: any) => {
+        if (!gameOver) {
+            // User's answer
+            const answer = e.currentTarget.value;
+            // Check answer against correct answer
+            const correct = questions[number].correct_answer === answer;
+            // Add score if answer is correct
+            if (correct) setScore((prev) => prev + 1);
+            // Save the answer in the array for user answers
+            const answerObject = {
+                question: questions[number].question,
+                answer,
+                correct,
+                correctAnswer: questions[number].correct_answer,
+            };
+            setUserAnswers((prev) => [...prev, answerObject]);
+        }
+    };
 
-              //below is the axios way, both fetch and axios cannot see updated state in this api call function!!!
-              // const receivedData = await axios.get(endpoint);
-              // console.log(receivedData.data.results);
-              // setQuestions(receivedData.data.results);
-              // console.log(questions);//You cannot see the updated state!!!
+    const nextQuestion = () => {
+        // Move on to the next question if not the last question
+        const nextQ = number + 1;
 
+        if (nextQ === TOTAL_QUESTIONS) {
+            setGameOver(true);
+        } else {
+            setNumber(nextQ);
+        }
+    };
 
-          })
-      return fetchedData;
-  }
+    return (
+        <>
 
-  return (
-      <>
-        <div>
-          <h1>REACT QUIZ</h1>
-         <button onClick={startTrivia}>start</button>
-          {questions.map((question, index)=>{
-              const {category} = question
-            return(
-                <p key={index}>{category}</p>
-            )
-          })}
-        </div>
-      </>
-  );
+            <div>
+                <h1>REACT QUIZ</h1>
+                {gameOver || userAnswers.length === TOTAL_QUESTIONS ? (
+                    <button className='start' onClick={startTrivia}>
+                        Start
+                    </button>
+                ) : null}
+                {!gameOver ? <p className='score'>Score: {score}</p> : null}
+                {loading ? <p>Loading Questions...</p> : null}
+                {!loading && !gameOver && (
+                    <QuestionCard
+                        questionNr={number + 1}
+                        totalQuestions={TOTAL_QUESTIONS}
+                        question={questions[number].question}
+                        answers={questions[number].answers}
+                        userAnswer={userAnswers ? userAnswers[number] : undefined}
+                        callback={checkAnswer}
+                    />
+                )}
+                {!gameOver && !loading && userAnswers.length === number + 1 && number !== TOTAL_QUESTIONS - 1 ? (
+                    <button className='next' onClick={nextQuestion}>
+                        Next Question
+                    </button>
+                ) : null}
+            </div>
+        </>
+    );
 };
 
 export default App;

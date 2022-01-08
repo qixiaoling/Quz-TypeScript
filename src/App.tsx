@@ -1,100 +1,128 @@
-import React, { useState } from 'react';
-import { fetchQuizQuestions } from './API';
-// Components
+import React, {useState} from 'react';
+import {shuffleArray} from "./Utility/Util";
 import QuestionCard from "./Component/QuestionCard";
-// types
-import { QuestionsState, Difficulty } from './API';
-// Styles
+import {GlobalStyle, Wrapper} from "./APP.styles";
 
 export type AnswerObject = {
-    question: string;
-    answer: string;
+    question : string;
+    answerFromUser: string;
     correct: boolean;
-    correctAnswer: string;
-};
+    correct_answer: string;
 
+}
 const TOTAL_QUESTIONS = 10;
+type Question = {
+    category: string;
+    correct_answer: string;
+    difficulty: string;
+    incorrect_answers: string[];
+    question: string;
+    type: string;
+}
+type QuestionsState = Question & { answers: string[] };
+
+enum Difficulty {
+    EASY = "easy",
+    MEDIUM = "medium",
+    HARD = "hard",
+}
+
+const fetchData = async (): Promise<QuestionsState[]> => {
+
+    const endpoint = `https://opentdb.com/api.php?amount=${TOTAL_QUESTIONS}&difficulty=${Difficulty.EASY}&type=multiple`
+    const fetchedData = fetch(endpoint)
+        .then((res) => res.json())
+        .then((res) => {
+            return res.results.map((resItem: Question) => ({
+                    ...resItem,
+                    answers: shuffleArray([...resItem.incorrect_answers, resItem.correct_answer])
+                })// console.log(questions);//You cannot see the updated state!!!you can see it if you call the async funciton
+                // again, but what it will show is the old data.
+            )
+
+            //below is the axios way, both fetch and axios cannot see updated state in this api call function!!!
+            // const receivedData = await axios.get(endpoint);
+            // console.log(receivedData.data.results);
+            // setQuestions(receivedData.data.results);
+            // console.log(questions);//You cannot see the updated state!!!
+
+
+        })
+    return fetchedData;
+}
 
 const App: React.FC = () => {
-    const [loading, setLoading] = useState(false);
     const [questions, setQuestions] = useState<QuestionsState[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [gameOver, setGameOver] = useState(true);
+    const [score, setScore] = useState<number>(0);
     const [number, setNumber] = useState(0);
     const [userAnswers, setUserAnswers] = useState<AnswerObject[]>([]);
-    const [score, setScore] = useState(0);
-    const [gameOver, setGameOver] = useState(true);
-
     const startTrivia = async () => {
         setLoading(true);
-        setGameOver(false);
-        const newQuestions = await fetchQuizQuestions(
-            TOTAL_QUESTIONS,
-            Difficulty.EASY
-        );
-        setQuestions(newQuestions);
+        setGameOver(false)
+        const data = await fetchData();
+        setQuestions(data);
         setScore(0);
-        setUserAnswers([]);
         setNumber(0);
+        setUserAnswers([]);
         setLoading(false);
-    };
-
-    const checkAnswer = (e: any) => {
-        if (!gameOver) {
-            // User's answer
-            const answer = e.currentTarget.value;
-            // Check answer against correct answer
-            const correct = questions[number].correct_answer === answer;
-            // Add score if answer is correct
-            if (correct) setScore((prev) => prev + 1);
-            // Save the answer in the array for user answers
-            const answerObject = {
-                question: questions[number].question,
-                answer,
-                correct,
-                correctAnswer: questions[number].correct_answer,
-            };
-            setUserAnswers((prev) => [...prev, answerObject]);
-        }
-    };
-
+    }
     const nextQuestion = () => {
-        // Move on to the next question if not the last question
         const nextQ = number + 1;
-
-        if (nextQ === TOTAL_QUESTIONS) {
-            setGameOver(true);
-        } else {
+        if(nextQ > TOTAL_QUESTIONS-1) {
+            setGameOver(true)
+        }else {
             setNumber(nextQ);
         }
-    };
+
+    }
+    const checkAnswer = (e:any) => {
+        if(!gameOver) {
+            const answerFromUser = e.currentTarget.value;
+            const correct = questions[number].correct_answer === answerFromUser;
+            console.log("correct is : " + questions[number].correct_answer);
+            console.log("user answer is : " + answerFromUser);
+            if (correct) setScore((prev) => prev + 1);
+            console.log(score)
+            const userAnswerObject = {
+                question: questions[number].question,
+                correct_answer : questions[number].correct_answer,
+                answerFromUser: answerFromUser,
+                correct: correct,
+            }
+            setUserAnswers((prev)=>[...prev, userAnswerObject])
+        }
+
+    }
+
 
     return (
         <>
-
-            <div>
+            <GlobalStyle/>
+            <Wrapper>
                 <h1>REACT QUIZ</h1>
                 {gameOver || userAnswers.length === TOTAL_QUESTIONS ? (
-                    <button className='start' onClick={startTrivia}>
-                        Start
-                    </button>
+                    <button onClick={startTrivia} className="btn start-btn">start</button>
                 ) : null}
-                {!gameOver ? <p className='score'>Score: {score}</p> : null}
-                {loading ? <p>Loading Questions...</p> : null}
+                {!gameOver ?
+                    <p>Score : {score}</p>
+                    : null}
                 {!loading && !gameOver && (
                     <QuestionCard
-                        questionNr={number + 1}
-                        totalQuestions={TOTAL_QUESTIONS}
                         question={questions[number].question}
                         answers={questions[number].answers}
+                        questionNr={number + 1}
+                        callBack={checkAnswer}
+                        total_questions={TOTAL_QUESTIONS}
                         userAnswer={userAnswers ? userAnswers[number] : undefined}
-                        callback={checkAnswer}
                     />
                 )}
-                {!gameOver && !loading && userAnswers.length === number + 1 && number !== TOTAL_QUESTIONS - 1 ? (
-                    <button className='next' onClick={nextQuestion}>
-                        Next Question
-                    </button>
-                ) : null}
-            </div>
+                {!loading && !gameOver && userAnswers.length === number + 1 && number !== TOTAL_QUESTIONS - 1 ?
+                    (
+                        <button onClick={nextQuestion} className="btn next-btn">Next Question</button>
+                    ) : null}
+            </Wrapper>
         </>
     );
 };
